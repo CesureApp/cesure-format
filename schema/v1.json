@@ -144,14 +144,18 @@
           "description": "Track volume in the mix, 0..1. An arrangement property like `capo`: imported from Guitar Pro, saved and exported. Absent means 1 (full scale)."
         },
         "instrument": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "enum": [
             "GUITAR",
             "BASS",
-            "PIANO"
+            "PIANO",
+            null
           ],
-          "default": "GUITAR",
-          "description": "Timbre of the track. Deliberately narrow: it lists only what the player can actually render. Absent means GUITAR."
+          "default": null,
+          "description": "Timbre of the track, or null/absent = unspecified. Deliberately narrow: it lists only what a player can actually render. Absent is NOT \"guitar\" — it means the file says nothing, and a player should fall back to its own sound preference."
         }
       }
     },

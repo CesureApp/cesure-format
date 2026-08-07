@@ -78,7 +78,7 @@ past the end of the score, or a non-positive `tempo`, are ignored.
 | `measures` | [`Measure[]`](#measure) | `[]` | Ordered list of measures. |
 | `capo` | `integer` | `0` | Capo position in frets (0 = none). Tab numbers stay relative to the capo; only the sounding pitch shifts up. |
 | `volume` | `number` | `1` | Track volume in the mix, `0`..`1`. Arrangement data, like `capo`: imported, saved, exported. |
-| `instrument` | `string` | `"GUITAR"` | Timbre: `GUITAR`, `BASS` or `PIANO`. Deliberately narrow — it lists only what a player can actually render. |
+| `instrument` | `string` \| `null` | `null` | Timbre: `GUITAR`, `BASS` or `PIANO`. Deliberately narrow — it lists only what a player can actually render. Absent is **not** "guitar": it means the file says nothing, and a player falls back to its own sound preference. |
 
 ---
 
