@@ -8,6 +8,13 @@ They are listed under v1 with the date they were added.
 
 ### Additive fields (backward-compatible, no version bump)
 
+- **`Track.volume`** *(number 0..1, default 1)* + **`Track.instrument`**
+  *(`GUITAR` | `BASS` | `PIANO`, default `GUITAR`)* — the track's place in the mix. Both are
+  **arrangement data**, like `capo`: imported from Guitar Pro (MIDI channel volume and General
+  MIDI program), saved, exported. A file written before these fields reads as full-scale guitar,
+  which is exactly how it used to sound. `instrument` is deliberately narrow — it lists only what
+  a player can actually render, rather than promising timbres that would silently fall back.
+
 - **`Score.tempoChanges`** *(TempoChange[], default [])* — mid-song tempo changes. Each
   entry sets the tempo from the start of a measure until the next one; `Score.tempo` becomes the
   *initial* tempo. Empty means constant tempo, which is exactly how every file written before this

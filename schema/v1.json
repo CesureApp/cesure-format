@@ -4,7 +4,10 @@
   "title": "Cesure File v1",
   "description": "Schema for .cesure tablature files, version 1.",
   "type": "object",
-  "required": ["version", "score"],
+  "required": [
+    "version",
+    "score"
+  ],
   "additionalProperties": false,
   "properties": {
     "version": {
@@ -22,14 +25,36 @@
       "description": "The root musical score.",
       "additionalProperties": false,
       "properties": {
-        "title":  { "type": "string", "default": "Untitled" },
-        "artist": { "type": "string", "default": "" },
-        "album":  { "type": "string", "default": "" },
-        "tempo":  { "type": "integer", "minimum": 1, "default": 120, "description": "Initial tempo in BPM." },
-        "tracks": { "type": "array", "items": { "$ref": "#/$defs/Track" }, "default": [] },
+        "title": {
+          "type": "string",
+          "default": "Untitled"
+        },
+        "artist": {
+          "type": "string",
+          "default": ""
+        },
+        "album": {
+          "type": "string",
+          "default": ""
+        },
+        "tempo": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 120,
+          "description": "Initial tempo in BPM."
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Track"
+          },
+          "default": []
+        },
         "tempoChanges": {
           "type": "array",
-          "items": { "$ref": "#/$defs/TempoChange" },
+          "items": {
+            "$ref": "#/$defs/TempoChange"
+          },
           "default": [],
           "description": "Mid-song tempo changes. Empty = constant tempo."
         }
@@ -39,10 +64,21 @@
       "type": "object",
       "description": "A tempo change taking effect at the start of a measure, until the next one.",
       "additionalProperties": false,
-      "required": ["measureIndex", "tempo"],
+      "required": [
+        "measureIndex",
+        "tempo"
+      ],
       "properties": {
-        "measureIndex": { "type": "integer", "minimum": 0, "description": "0-indexed measure the new tempo starts at." },
-        "tempo": { "type": "integer", "minimum": 1, "description": "Tempo in BPM from that measure on." }
+        "measureIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "0-indexed measure the new tempo starts at."
+        },
+        "tempo": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Tempo in BPM from that measure on."
+        }
       }
     },
     "Track": {
@@ -50,26 +86,72 @@
       "description": "A single instrument track.",
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string", "default": "Guitar" },
+        "name": {
+          "type": "string",
+          "default": "Guitar"
+        },
         "tuning": {
           "type": "array",
-          "items": { "$ref": "#/$defs/AbsNote" },
+          "items": {
+            "$ref": "#/$defs/AbsNote"
+          },
           "description": "String tuning from string 1 (highest) to string N (lowest).",
           "default": [
-            {"note": "E", "octave": 4},
-            {"note": "B", "octave": 3},
-            {"note": "G", "octave": 3},
-            {"note": "D", "octave": 3},
-            {"note": "A", "octave": 2},
-            {"note": "E", "octave": 2}
+            {
+              "note": "E",
+              "octave": 4
+            },
+            {
+              "note": "B",
+              "octave": 3
+            },
+            {
+              "note": "G",
+              "octave": 3
+            },
+            {
+              "note": "D",
+              "octave": 3
+            },
+            {
+              "note": "A",
+              "octave": 2
+            },
+            {
+              "note": "E",
+              "octave": 2
+            }
           ]
         },
-        "measures": { "type": "array", "items": { "$ref": "#/$defs/Measure" }, "default": [] },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Measure"
+          },
+          "default": []
+        },
         "capo": {
           "type": "integer",
           "minimum": 0,
           "default": 0,
           "description": "Capo position in frets (0 = none). Tab numbers stay relative to the capo; only the sounding pitch shifts up."
+        },
+        "volume": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "description": "Track volume in the mix, 0..1. An arrangement property like `capo`: imported from Guitar Pro, saved and exported. Absent means 1 (full scale)."
+        },
+        "instrument": {
+          "type": "string",
+          "enum": [
+            "GUITAR",
+            "BASS",
+            "PIANO"
+          ],
+          "default": "GUITAR",
+          "description": "Timbre of the track. Deliberately narrow: it lists only what the player can actually render. Absent means GUITAR."
         }
       }
     },
@@ -78,26 +160,64 @@
       "description": "A single bar.",
       "additionalProperties": false,
       "properties": {
-        "beats":       { "type": "array", "items": { "$ref": "#/$defs/Beat" }, "default": [] },
-        "numerator":   { "type": "integer", "minimum": 1, "default": 4 },
-        "denominator": { "type": "integer", "enum": [1, 2, 4, 8, 16, 32], "default": 4 }
+        "beats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Beat"
+          },
+          "default": []
+        },
+        "numerator": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 4
+        },
+        "denominator": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32
+          ],
+          "default": 4
+        }
       }
     },
     "Beat": {
       "type": "object",
       "description": "A rhythmic position in a measure. Empty notes = rest.",
-      "required": ["duration"],
+      "required": [
+        "duration"
+      ],
       "additionalProperties": false,
       "properties": {
-        "duration": { "$ref": "#/$defs/Duration" },
-        "notes":    { "type": "array", "items": { "$ref": "#/$defs/TabNote" }, "default": [] },
-        "isDotted": { "type": "boolean", "default": false, "description": "If true, duration × 1.5." }
+        "duration": {
+          "$ref": "#/$defs/Duration"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TabNote"
+          },
+          "default": []
+        },
+        "isDotted": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, duration × 1.5."
+        }
       }
     },
     "TabNote": {
       "type": "object",
       "description": "A single note at a (string, fret) position.",
-      "required": ["string", "fret"],
+      "required": [
+        "string",
+        "fret"
+      ],
       "additionalProperties": false,
       "properties": {
         "string": {
@@ -112,7 +232,9 @@
         },
         "techniques": {
           "type": "array",
-          "items": { "$ref": "#/$defs/TabTechnique" },
+          "items": {
+            "$ref": "#/$defs/TabTechnique"
+          },
           "uniqueItems": true,
           "default": [],
           "description": "Playing techniques attached to the note."
@@ -129,29 +251,65 @@
       }
     },
     "TabVoice": {
-      "type": ["string", "null"],
-      "enum": ["A", "B", null],
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "A",
+        "B",
+        null
+      ],
       "description": "Voice of a note. A = lower voice, B = upper voice. null = automatic."
     },
     "TabTechnique": {
       "type": "string",
-      "enum": ["HAMMER_PULL", "SLIDE", "BEND", "VIBRATO", "TAPPING"],
+      "enum": [
+        "HAMMER_PULL",
+        "SLIDE",
+        "BEND",
+        "VIBRATO",
+        "TAPPING"
+      ],
       "description": "Playing technique. HAMMER_PULL and SLIDE are transitions toward the next note on the same string."
     },
     "Duration": {
       "type": "string",
-      "enum": ["WHOLE", "HALF", "QUARTER", "EIGHTH", "SIXTEENTH", "THIRTY_SECOND"],
+      "enum": [
+        "WHOLE",
+        "HALF",
+        "QUARTER",
+        "EIGHTH",
+        "SIXTEENTH",
+        "THIRTY_SECOND"
+      ],
       "description": "Musical note value. Quarter-note counts: WHOLE=4, HALF=2, QUARTER=1, EIGHTH=0.5, SIXTEENTH=0.25, THIRTY_SECOND=0.125."
     },
     "AbsNote": {
       "type": "object",
       "description": "An absolute pitch (pitch class + octave).",
-      "required": ["note", "octave"],
+      "required": [
+        "note",
+        "octave"
+      ],
       "additionalProperties": false,
       "properties": {
         "note": {
           "type": "string",
-          "enum": ["C", "Cs", "D", "Ds", "E", "F", "Fs", "G", "Gs", "A", "As", "B"],
+          "enum": [
+            "C",
+            "Cs",
+            "D",
+            "Ds",
+            "E",
+            "F",
+            "Fs",
+            "G",
+            "Gs",
+            "A",
+            "As",
+            "B"
+          ],
           "description": "Pitch class. 's' suffix = sharp (e.g. Cs = C#)."
         },
         "octave": {
