@@ -8,16 +8,16 @@ They are listed under v1 with the date they were added.
 
 ### Additive fields (backward-compatible, no version bump)
 
-- **`Score.tempoChanges`** *(TempoChange[], default [])* — mid-song tempo changes (T-013). Each
+- **`Score.tempoChanges`** *(TempoChange[], default [])* — mid-song tempo changes. Each
   entry sets the tempo from the start of a measure until the next one; `Score.tempo` becomes the
   *initial* tempo. Empty means constant tempo, which is exactly how every file written before this
   field reads. Tempo belongs to the score, not to a track, as in MIDI.
-- **`Track.capo`** *(integer, default 0)* — capo position in frets (T-328). Tab numbers stay
+- **`Track.capo`** *(integer, default 0)* — capo position in frets. Tab numbers stay
   relative to the capo; only the sounding pitch shifts.
 - **`TabNote.techniques`** *(TabTechnique[], default [])* + **`TabNote.bendSemitones`**
-  *(integer, default 2)* — playing techniques hammer/pull, slide, bend, vibrato, tapping (F29).
-- **`TabNote.voice`** *(TabVoice | null, default null)* — voice A / B for two-hand or duet parts
-  (T-014). `null` means *automatic*: the voice is derived from the register against a split point
+  *(integer, default 2)* — playing techniques hammer/pull, slide, bend, vibrato, tapping.
+- **`TabNote.voice`** *(TabVoice | null, default null)* — voice A / B for two-hand or duet parts.
+  `null` means *automatic*: the voice is derived from the register against a split point
   that belongs to the reader, not to the file. An explicit value always wins, so moving the split
   point never erases a manual assignment.
 

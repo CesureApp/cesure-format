@@ -245,8 +245,19 @@ procedure — a lost tab does not come back.
    v1 corpus, unsupported-future-version, unknown-fields-ignored.
 
 The drift this guards against is real: `capo`, `techniques` and `bendSemitones` were once added to
-the model without updating this spec/schema (fixed 2026-07-25, T-333) — the schema even had
+the model without updating this spec/schema (fixed 2026-07-25) — the schema even had
 `additionalProperties: false`, so it would have *rejected* real files.
+
+## The application behind the format
+
+`.cesure` is written and read by **[Cesure](https://cesure.app)** — a guitar tablature editor and
+practice toolkit that runs [in the browser](https://cesure.app), on Android and on iOS. It imports
+Guitar Pro, MusicXML, MIDI and AlphaTex, transcribes audio to tablature, and plays scores back with
+a tuner, a metronome and a piano roll.
+
+That matters for this specification, and not as an advertisement: the format is exercised by the
+application's test suite on every build — round-trip, migration, and a frozen corpus of real files.
+A spec nobody runs drifts from the files it claims to describe. This one can't.
 
 ## License
 

@@ -115,7 +115,7 @@
           "items": { "$ref": "#/$defs/TabTechnique" },
           "uniqueItems": true,
           "default": [],
-          "description": "Playing techniques attached to the note (F29)."
+          "description": "Playing techniques attached to the note."
         },
         "bendSemitones": {
           "type": "integer",
