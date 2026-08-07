@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "score": {
+    "title": "Simple Example",
+    "artist": "",
+    "album": "",
+    "tempo": 120,
+    "tracks": [
+      {
+        "name": "Guitar",
+        "tuning": [
+          {"note": "E", "octave": 4},
+          {"note": "B", "octave": 3},
+          {"note": "G", "octave": 3},
+          {"note": "D", "octave": 3},
+          {"note": "A", "octave": 2},
+          {"note": "E", "octave": 2}
+        ],
+        "measures": [
+          {
+            "numerator": 4,
+            "denominator": 4,
+            "beats": [
+              {"duration": "QUARTER", "notes": [{"string": 1, "fret": 0}], "isDotted": false},
+              {"duration": "QUARTER", "notes": [{"string": 2, "fret": 1}], "isDotted": false},
+              {"duration": "QUARTER", "notes": [{"string": 3, "fret": 0}], "isDotted": false},
+              {"duration": "QUARTER", "notes": [],                          "isDotted": false}
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
