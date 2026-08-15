@@ -8,10 +8,17 @@ They are listed under v1 with the date they were added.
 
 ### Additive fields (backward-compatible, no version bump)
 
+- **`Score.license`** *(string, default `""`)* + **`Score.attribution`** *(string, default `""`)*
+  — added 2026-08-15 for the public-domain catalog. `license` names the license of the published
+  work (`Public Domain`, `CC BY 4.0`, …); `attribution` credits the edition, year and source URL
+  included. They live in the **file**, not in a page or a database, because CC-BY requires the
+  attribution to follow the work when someone keeps a copy. Empty (the default, and the state of
+  every user-authored score) means the file says nothing.
+
 - **`Track.volume`** *(number 0..1, default 1)* + **`Track.instrument`**
   *(`GUITAR` | `BASS` | `PIANO` | `null`, default `null`)* — the track's place in the mix. Both are
   **arrangement data**, like `capo`: imported from Guitar Pro (MIDI channel volume and General
-  MIDI program), saved, exported. A file written before these fields reads as full-scale, with no
+  MIDI program) and saved. A file written before these fields reads as full-scale, with no
   timbre imposed — exactly how it used to sound. `instrument` is deliberately narrow: it lists only
   what a player can actually render, rather than promising timbres that would silently fall back.
   **Absent is not `GUITAR`** — it means the file says nothing about the timbre, and a player should

@@ -49,6 +49,8 @@ score.cesure
 | `tempo` | `integer` | `120` | Initial tempo in BPM — in force until the first `tempoChanges` entry. |
 | `tracks` | [`Track[]`](#track) | `[]` | Instrument tracks. |
 | `tempoChanges` | [`TempoChange[]`](#tempochange) | `[]` | Mid-song tempo changes. Empty = constant tempo. |
+| `license` | `string` | `""` | License of the published work (e.g. `Public Domain`, `CC BY 4.0`). Empty = the file says nothing — the case of every user-authored score. |
+| `attribution` | `string` | `""` | Attribution of the edition — year and source URL included when applicable. It travels **with the file** because CC-BY legally requires it when a copy is kept. Empty = nothing to attribute. |
 
 ---
 

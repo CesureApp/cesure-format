@@ -57,6 +57,16 @@
           },
           "default": [],
           "description": "Mid-song tempo changes. Empty = constant tempo."
+        },
+        "license": {
+          "type": "string",
+          "default": "",
+          "description": "License of the published work (e.g. \"Public Domain\", \"CC BY 4.0\"). Empty = the file says nothing."
+        },
+        "attribution": {
+          "type": "string",
+          "default": "",
+          "description": "Attribution of the edition, including year and source URL when applicable. Travels with the file (CC-BY requires it). Empty = nothing to attribute."
         }
       }
     },
