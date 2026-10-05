@@ -18,25 +18,24 @@ except ImportError:
     sys.exit("Missing dependency: jsonschema. Install it with `pip install jsonschema`.")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCHEMA_PATH = os.path.join(ROOT, "schema", "v1.json")
-EXAMPLES_GLOB = os.path.join(ROOT, "examples", "*.cesure")
+# Each version's examples against that version's schema: the current ones in examples/, the
+# frozen ones of an older version in examples/vN/.
+SUITES = [
+    ("v2.json", os.path.join(ROOT, "examples", "*.cesure")),
+    ("v1.json", os.path.join(ROOT, "examples", "v1", "*.cesure")),
+]
 
 
-def main() -> int:
-    with open(SCHEMA_PATH, encoding="utf-8") as f:
+def validate(schema_name: str, examples_glob: str) -> int:
+    with open(os.path.join(ROOT, "schema", schema_name), encoding="utf-8") as f:
         schema = json.load(f)
-
-    # 1. The schema must itself be a valid Draft 2020-12 schema.
     Draft202012Validator.check_schema(schema)
-    print(f"OK  schema/{os.path.basename(SCHEMA_PATH)} is a valid Draft 2020-12 schema")
-
-    # 2. Every example must conform to the schema.
+    print(f"OK  schema/{schema_name} is a valid Draft 2020-12 schema")
     validator = Draft202012Validator(schema)
-    examples = sorted(glob.glob(EXAMPLES_GLOB))
+    examples = sorted(glob.glob(examples_glob))
     if not examples:
-        print("No examples found — nothing to validate", file=sys.stderr)
+        print(f"No examples for schema/{schema_name} — nothing to validate", file=sys.stderr)
         return 1
-
     failures = 0
     for path in examples:
         rel = os.path.relpath(path, ROOT)
@@ -51,13 +50,17 @@ def main() -> int:
                 print(f"     - {where}: {err.message}")
         else:
             print(f"OK  {rel}")
+    return failures
 
+
+def main() -> int:
+    failures = sum(validate(schema, examples) for schema, examples in SUITES)
     if failures:
-        print(f"\n{failures} example(s) failed validation", file=sys.stderr)
+        print(f"\n{failures} failure(s)", file=sys.stderr)
         return 1
-    print(f"\nAll {len(examples)} example(s) valid.")
+    print("\nAll examples valid.")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

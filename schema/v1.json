@@ -23,7 +23,7 @@
     "Score": {
       "type": "object",
       "description": "The root musical score.",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "title": {
           "type": "string",
@@ -73,7 +73,7 @@
     "TempoChange": {
       "type": "object",
       "description": "A tempo change taking effect at the start of a measure, until the next one.",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": [
         "measureIndex",
         "tempo"
@@ -94,7 +94,7 @@
     "Track": {
       "type": "object",
       "description": "A single instrument track.",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "name": {
           "type": "string",
@@ -165,14 +165,14 @@
             null
           ],
           "default": null,
-          "description": "Timbre of the track, or null/absent = unspecified. Deliberately narrow: it lists only what a player can actually render. Absent is NOT \"guitar\" — it means the file says nothing, and a player should fall back to its own sound preference."
+          "description": "Timbre of the track, or null/absent = unspecified. Deliberately narrow: it lists only what a player can actually render. Absent is NOT \"guitar\" — it means the file says nothing, and a player should fall back to its own sound preference. May grow within v1: a reader treats a value it cannot name as unspecified, keeps it aside and writes it back unchanged."
         }
       }
     },
     "Measure": {
       "type": "object",
       "description": "A single bar.",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "beats": {
           "type": "array",
@@ -197,6 +197,15 @@
             32
           ],
           "default": 4
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 64,
+          "default": null,
+          "description": "Stable identity of the measure's column: measure i of every track carries the same id, and no two columns share one. Absent in every file written before 2026-09-29; a reader then assigns p1..pN by position (measure n gets pn). Opaque: a reader never derives meaning from its content."
         }
       }
     },
@@ -206,7 +215,7 @@
       "required": [
         "duration"
       ],
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "duration": {
           "$ref": "#/$defs/Duration"
@@ -222,6 +231,39 @@
           "type": "boolean",
           "default": false,
           "description": "If true, duration × 1.5."
+        },
+        "tuplet": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Tuplet"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tuplet the beat belongs to. Absent or null = none."
+        }
+      }
+    },
+    "Tuplet": {
+      "type": "object",
+      "description": "count beats in the time of inTimeOf beats of the same written value (triplet = 3 in 2).",
+      "required": [
+        "count",
+        "inTimeOf"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Beats in the group."
+        },
+        "inTimeOf": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Beats of the same written value the group replaces."
         }
       }
     },
@@ -232,7 +274,7 @@
         "string",
         "fret"
       ],
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "string": {
           "type": "integer",
@@ -261,6 +303,11 @@
         "voice": {
           "$ref": "#/$defs/TabVoice",
           "description": "Explicitly assigned voice. Absent or null = automatic (derived from register)."
+        },
+        "tied": {
+          "type": "boolean",
+          "default": false,
+          "description": "Tied to the previous note on the same string: not attacked again, prolongs it."
         }
       }
     },
@@ -274,7 +321,7 @@
         "B",
         null
       ],
-      "description": "Voice of a note. A = lower voice, B = upper voice. null = automatic."
+      "description": "Voice of a note. A = lower voice, B = upper voice. null = automatic. May grow within v1: a reader treats a value it cannot name as automatic, keeps it aside and writes it back unchanged."
     },
     "TabTechnique": {
       "type": "string",
@@ -285,7 +332,7 @@
         "VIBRATO",
         "TAPPING"
       ],
-      "description": "Playing technique. HAMMER_PULL and SLIDE are transitions toward the next note on the same string."
+      "description": "Playing technique. HAMMER_PULL and SLIDE are transitions toward the next note on the same string. May grow within v1: a reader keeps an element it cannot name aside and writes it back unchanged."
     },
     "Duration": {
       "type": "string",
@@ -297,7 +344,7 @@
         "SIXTEENTH",
         "THIRTY_SECOND"
       ],
-      "description": "Musical note value. Quarter-note counts: WHOLE=4, HALF=2, QUARTER=1, EIGHTH=0.5, SIXTEENTH=0.25, THIRTY_SECOND=0.125."
+      "description": "Musical note value. Quarter-note counts: WHOLE=4, HALF=2, QUARTER=1, EIGHTH=0.5, SIXTEENTH=0.25, THIRTY_SECOND=0.125. Closed for v1: a reader refuses a value it cannot name rather than guess the rhythm, so adding one bumps the version."
     },
     "AbsNote": {
       "type": "object",
@@ -306,7 +353,7 @@
         "note",
         "octave"
       ],
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "note": {
           "type": "string",
@@ -324,7 +371,7 @@
             "As",
             "B"
           ],
-          "description": "Pitch class. 's' suffix = sharp (e.g. Cs = C#)."
+          "description": "Pitch class. 's' suffix = sharp (e.g. Cs = C#). Closed for v1: a reader refuses a value it cannot name rather than guess the tuning, so adding one bumps the version."
         },
         "octave": {
           "type": "integer",

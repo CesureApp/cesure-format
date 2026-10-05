@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cesure.app/format/schema/v2.json",
+  "title": "Cesure File v2",
+  "description": "A .cesure tablature file, version 2: a JSON skeleton (metadata, tempo, repeats, tracks, measures with stable ids and time signatures, staves, voices) whose notes are written per voice in a compact text notation. Written by Cesure (https://cesure.app), meant to be read and written by agents and tools; the full specification is at https://cesure.app/format. Defaults are omitted on write. Every object keeps the keys it does not know, and the notation keeps the properties it does not know.",
+  "type": "object",
+  "required": [
+    "version",
+    "score"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 2,
+      "description": "Format version. 2 for this schema; a reader refuses a higher one."
+    },
+    "score": {
+      "$ref": "#/$defs/Score"
+    }
+  },
+  "$defs": {
+    "Score": {
+      "type": "object",
+      "description": "The whole piece: metadata, the tempo, the repeats and the tracks.",
+      "additionalProperties": true,
+      "properties": {
+        "title": {
+          "type": "string",
+          "default": "Untitled",
+          "description": "Title of the piece."
+        },
+        "artist": {
+          "type": "string",
+          "default": "",
+          "description": "Composer or performer."
+        },
+        "album": {
+          "type": "string",
+          "default": "",
+          "description": "Album, when the piece comes from one."
+        },
+        "tempo": {
+          "type": "number",
+          "minimum": 20,
+          "maximum": 400,
+          "default": 120,
+          "description": "Initial tempo in quarter notes per minute, whatever the time signature (a 6/8 at 60 dotted quarters per minute is 90), in force until the first tempo change. Whole or not: 92.5 is kept as written."
+        },
+        "tempoChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TempoChange"
+          },
+          "default": [],
+          "description": "Tempo changes, each at the start of a measure named by its id. Empty = constant tempo."
+        },
+        "repeats": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Repeat"
+          },
+          "default": {},
+          "description": "Repeat signs, keyed by the id of the measure that carries them. A measure absent from this object carries none."
+        },
+        "license": {
+          "type": "string",
+          "default": "",
+          "description": "License of the published work (e.g. \"Public Domain\", \"CC BY 4.0\"). Empty = the file says nothing."
+        },
+        "attribution": {
+          "type": "string",
+          "default": "",
+          "description": "Attribution of the edition, including year and source URL when applicable. Travels with the file (CC-BY requires it). Empty = nothing to attribute."
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Track"
+          },
+          "default": [],
+          "description": "The instrument tracks. Measure i of every track is the same column of the piece: same id, played at the same time."
+        }
+      }
+    },
+    "TempoChange": {
+      "type": "object",
+      "description": "A tempo taking effect at the start of a measure, until the next change.",
+      "additionalProperties": true,
+      "required": [
+        "measure",
+        "tempo"
+      ],
+      "properties": {
+        "measure": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The id of the measure the tempo starts at. A change naming no measure of the piece is ignored."
+        },
+        "tempo": {
+          "type": "number",
+          "minimum": 20,
+          "maximum": 400,
+          "description": "Tempo in quarter notes per minute, whatever the time signature, from that measure on, whole or not."
+        }
+      }
+    },
+    "Repeat": {
+      "type": "object",
+      "description": "The repeat signs of one measure (of its column, on every track).",
+      "additionalProperties": true,
+      "properties": {
+        "start": {
+          "type": "boolean",
+          "default": false,
+          "description": "A repeated section opens at the start of this measure (|:)."
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 99,
+          "description": "A repeated section closes at the end of this measure (:|): the number of times the section is played in all. Absent = no close here."
+        },
+        "endings": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "Alternative ending: the passes on which this measure is played ([1] = first ending, [2] = second). Absent or empty = played on every pass. A bracket longer than one measure repeats the passes on each of its measures."
+        }
+      }
+    },
+    "Track": {
+      "type": "object",
+      "description": "One instrument track.",
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "Guitar",
+          "description": "Track name."
+        },
+        "tuning": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AbsNote"
+          },
+          "description": "Open string pitches from string 1 (the highest) to string N (the lowest); its length is the number of strings.",
+          "default": [
+            {
+              "note": "E",
+              "octave": 4
+            },
+            {
+              "note": "B",
+              "octave": 3
+            },
+            {
+              "note": "G",
+              "octave": 3
+            },
+            {
+              "note": "D",
+              "octave": 3
+            },
+            {
+              "note": "A",
+              "octave": 2
+            },
+            {
+              "note": "E",
+              "octave": 2
+            }
+          ]
+        },
+        "capo": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Capo position in frets (0 = none). Tab numbers stay relative to the capo; only the sounding pitch shifts up."
+        },
+        "volume": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "description": "Track volume in the mix, 0..1. An arrangement property like `capo`: imported from Guitar Pro, saved and exported. Absent means 1 (full scale)."
+        },
+        "instrument": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "GUITAR",
+            "BASS",
+            "PIANO",
+            null
+          ],
+          "default": null,
+          "description": "Timbre of the track, or null/absent = unspecified. Deliberately narrow: it lists only what a player can actually render. Absent is NOT \"guitar\" — it means the file says nothing, and a player should fall back to its own sound preference. May grow within v2: a reader treats a value it cannot name as unspecified, keeps it aside and writes it back unchanged."
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Measure"
+          },
+          "default": [],
+          "description": "The measures of the track, in order."
+        }
+      }
+    },
+    "Measure": {
+      "type": "object",
+      "description": "One measure of a track: its id, its time signature and, per staff, its voices.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Stable id of the measure's column, the same on every track and never reused. Name ranges by it: it survives insertions and deletions, a measure number does not. Optional when writing a new measure: a reader assigns one."
+        },
+        "numerator": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "default": 4,
+          "description": "Beats per measure (time signature numerator), 1 to 128. Not carried over: absent means 4, whatever the measure before. Cesure reads a value outside the range as 4."
+        },
+        "denominator": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32
+          ],
+          "default": 4,
+          "description": "Note value of one beat (time signature denominator). Not carried over: absent means 4, whatever the measure before."
+        },
+        "staves": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Staff"
+          },
+          "description": "The staves of the track in this measure, top to bottom. Cesure writes one; a reader keeps the ones it cannot show and writes them back."
+        }
+      }
+    },
+    "Staff": {
+      "type": "object",
+      "description": "One staff of a track in one measure: its voices.",
+      "additionalProperties": true,
+      "required": [
+        "voices"
+      ],
+      "properties": {
+        "voices": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "description": "One voice of the staff in this measure, in the compact notation (https://cesure.app/format#the-compact-notation): beats separated by spaces; a beat is a note, a chord in parentheses, or r (rest), then .duration (1, 2, 4, 8, 16, 32, 64), e.g. \"5.3.4 (0.1 2.2).8 r.2\". A note is fret.string, the string always written (x as fret: muted; {t} after the note: tied to the note it continues, its fret and string still written). Beat properties go in braces after the duration ({d} dotted, {dd} double-dotted, {tu 3} triplet, {tu (5 4)}), note properties in braces after the note ({h} hammer-on/pull-off, {sl} slide, {b (0 4)} bend in quarter tones, {v} vibrato, {lht} tap, {hand A|B}). Every beat states its duration after a dot; nothing carries over from the previous measure. A note may be written by its pitch instead (C4, F#3, Ebb4, Dx5): the reader chooses its string and fret. Reserved: a drum note by its General MIDI key (p42, p0 to p127). A property or note form a reader does not know is kept and written back."
+          },
+          "description": "The voices of the staff, played at the same time, each over the whole measure and with its own rhythm: the first, then a second one (a bass under a melody) when there is one. Cesure writes at most two; a reader keeps the ones it cannot show and writes them back. Each voice should fill the time signature."
+        }
+      }
+    },
+    "AbsNote": {
+      "type": "object",
+      "description": "An absolute pitch (pitch class + octave).",
+      "required": [
+        "note",
+        "octave"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "note": {
+          "type": "string",
+          "enum": [
+            "C",
+            "Cs",
+            "D",
+            "Ds",
+            "E",
+            "F",
+            "Fs",
+            "G",
+            "Gs",
+            "A",
+            "As",
+            "B"
+          ],
+          "description": "Pitch class. 's' suffix = sharp (e.g. Cs = C#). Closed for v1: a reader refuses a value it cannot name rather than guess the tuning, so adding one bumps the version."
+        },
+        "octave": {
+          "type": "integer",
+          "description": "Octave number in scientific pitch notation. Middle C = {note: C, octave: 4}."
+        }
+      }
+    }
+  }
+}
