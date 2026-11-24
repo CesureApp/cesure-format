@@ -21,7 +21,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Each version's examples against that version's schema: the current ones in examples/, the
 # frozen ones of an older version in examples/vN/.
 SUITES = [
-    ("v2.json", os.path.join(ROOT, "examples", "*.cesure")),
+    ("v4.json", os.path.join(ROOT, "examples", "*.cesure")),
+    ("v3.json", os.path.join(ROOT, "examples", "v3", "*.cesure")),
+    ("v2.json", os.path.join(ROOT, "examples", "v2", "*.cesure")),
     ("v1.json", os.path.join(ROOT, "examples", "v1", "*.cesure")),
 ]
 

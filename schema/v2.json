@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cesure.app/format/schema/v2.json",
   "title": "Cesure File v2",
-  "description": "A .cesure tablature file, version 2: a JSON skeleton (metadata, tempo, repeats, tracks, measures with stable ids and time signatures, staves, voices) whose notes are written per voice in a compact text notation. Written by Cesure (https://cesure.app), meant to be read and written by agents and tools; the full specification is at https://cesure.app/format. Defaults are omitted on write. Every object keeps the keys it does not know, and the notation keeps the properties it does not know.",
+  "description": "A .cesure tablature file, version 2: a JSON skeleton (metadata, tempo, key, repeats, tracks, measures with stable ids and time signatures, staves, voices) whose notes are written per voice in a compact text notation. Written by Cesure (https://cesure.app), meant to be read and written by agents and tools; the full specification is at https://cesure.app/format. Defaults are omitted on write. Every object keeps the keys it does not know, and the notation keeps the properties it does not know.",
   "type": "object",
   "required": [
     "version",
@@ -55,6 +55,19 @@
           "default": [],
           "description": "Tempo changes, each at the start of a measure named by its id. Empty = constant tempo."
         },
+        "key": {
+          "type": "string",
+          "enum": ["Cb", "Gb", "Db", "Ab", "Eb", "Bb", "F", "C", "G", "D", "A", "E", "B", "F#", "C#", "Abm", "Ebm", "Bbm", "Fm", "Cm", "Gm", "Dm", "Am", "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "A#m"],
+          "description": "The key the piece is in from its first measure: its tonic, with b or # for a flat or a sharp, and m for a minor key (\"Am\", \"Bb\", \"F#m\"). Absent = the file states none, and a reader finds it from the notes; what it finds is never written back."
+        },
+        "keyChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KeyChange"
+          },
+          "default": [],
+          "description": "Key changes, each at the start of a measure named by its id. Empty = one key for the whole piece."
+        },
         "repeats": {
           "type": "object",
           "additionalProperties": {
@@ -72,6 +85,16 @@
           "type": "string",
           "default": "",
           "description": "Attribution of the edition, including year and source URL when applicable. Travels with the file (CC-BY requires it). Empty = nothing to attribute."
+        },
+        "hideEmptyStaves": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the staves whose `hideWhenEmpty` is `auto` leave a system they play nothing in (MuseScore's \"Hide empty staves\", alphaTab's `\\hideemptystaves`). Absent = they are drawn."
+        },
+        "hideEmptyStavesInFirstSystem": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the first system too leaves out the staves that hide when empty (LilyPond's `remove-first`, MuseScore's \"Hide empty staves in first system\"). Absent = the first system draws every staff."
         },
         "tracks": {
           "type": "array",
@@ -103,6 +126,28 @@
           "minimum": 20,
           "maximum": 400,
           "description": "Tempo in quarter notes per minute, whatever the time signature, from that measure on, whole or not."
+        }
+      }
+    },
+    "KeyChange": {
+      "type": "object",
+      "description": "A key taking effect at the start of a measure, until the next change.",
+      "additionalProperties": true,
+      "required": [
+        "measure",
+        "key"
+      ],
+      "properties": {
+        "measure": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The id of the measure the key starts at. A change naming no measure of the piece is ignored."
+        },
+        "key": {
+          "type": "string",
+          "enum": ["Cb", "Gb", "Db", "Ab", "Eb", "Bb", "F", "C", "G", "D", "A", "E", "B", "F#", "C#", "Abm", "Ebm", "Bbm", "Fm", "Cm", "Gm", "Dm", "Am", "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "A#m"],
+          "description": "The key from that measure on, named as the score's key is."
         }
       }
     },
@@ -184,12 +229,33 @@
           "default": 0,
           "description": "Capo position in frets (0 = none). Tab numbers stay relative to the capo; only the sounding pitch shifts up."
         },
+        "frets": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 127,
+          "default": 24,
+          "description": "The frets of the neck, as MuseScore's <StringData><frets> and Guitar Pro's; ignored on a track without strings. A capo sits under the last fret; a note past it is kept on its string, played and drawn out of the neck. Absent means 24. Added 2026-11-19, no new version: every version reads it."
+        },
         "volume": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
           "default": 1,
           "description": "Track volume in the mix, 0..1. An arrangement property like `capo`: imported from Guitar Pro, saved and exported. Absent means 1 (full scale)."
+        },
+        "hideWhenEmpty": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "always",
+              "never",
+              "instrument"
+            ]
+          },
+          "default": [],
+          "description": "How each staff, by index, hides in a system it plays no note in, as MuseScore's per-staff \"Hide when empty\": `auto` as the score's `hideEmptyStaves` says, `always` on its own, `never` not, `instrument` only with the whole track, when none of its staves plays (LilyPond's `\\RemoveEmptyStaves` in a PianoStaff, whose staves are kept together). A staff past the list is `auto`. A staff left out stays in the file: only the system does not draw it. A system keeps one staff at least: when every staff leaves, its first stays, as in MuseScore."
         },
         "instrument": {
           "type": [
@@ -200,10 +266,23 @@
             "GUITAR",
             "BASS",
             "PIANO",
+            "DRUMS",
             null
           ],
           "default": null,
-          "description": "Timbre of the track, or null/absent = unspecified. Deliberately narrow: it lists only what a player can actually render. Absent is NOT \"guitar\" — it means the file says nothing, and a player should fall back to its own sound preference. May grow within v2: a reader treats a value it cannot name as unspecified, keeps it aside and writes it back unchanged."
+          "description": "What the track is played on, or null/absent = unspecified: a track with strings then sounds as a guitar, one without as a piano. `DRUMS` is the General MIDI drum kit: its beats strike drum notes (`p36`), and it sounds the kit. Its sound is `program` when the track states one, else its instrument's. May grow within v2: a reader treats a value it cannot name as unspecified, keeps it aside and writes it back unchanged."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "What tells the track from the others of its score, whatever its place, as MusicXML's `<score-part id>`: opaque, unique in the file, kept by a writer, a new one for a new track. Absent, a reader gives it one derived from what the track holds, never from its place. Added 2026-11-18, no new version: every version reads it."
+        },
+        "program": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127,
+          "description": "The General MIDI program (0..127, General MIDI's program 1 is 0) the track sounds, as its source states it: imported from Guitar Pro, MIDI and MusicXML, written back by the MIDI and MusicXML exports. Absent, the track sounds its instrument's: a nylon guitar (24), a finger bass (33), a grand piano (0). Ignored on a `DRUMS` track, which sounds the standard kit. Added 2026-11-14, no new version: every version reads it."
         },
         "measures": {
           "type": "array",
@@ -231,7 +310,7 @@
           "minimum": 1,
           "maximum": 128,
           "default": 4,
-          "description": "Beats per measure (time signature numerator), 1 to 128. Not carried over: absent means 4, whatever the measure before. Cesure reads a value outside the range as 4."
+          "description": "Beats per measure (time signature numerator), 1 to 128. Not carried over: absent means 4, whatever the measure before. Cesure refuses a file that writes a value outside the range, naming it."
         },
         "denominator": {
           "type": "integer",
@@ -245,6 +324,11 @@
           ],
           "default": 4,
           "description": "Note value of one beat (time signature denominator). Not carried over: absent means 4, whatever the measure before."
+        },
+        "incomplete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Written shorter than the piece's measures on purpose, in its own time signature: an opening pickup, a closing measure that completes it, or a short measure inside the piece (an inner pickup). Played as written. Cesure shows it the time signature of its complete neighbour (the next one for an opening pickup, else the one before it) and numbers an opening pickup 0, without showing it: the first full measure is 1."
         },
         "staves": {
           "type": "array",

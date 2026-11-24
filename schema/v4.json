@@ -1,0 +1,620 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cesure.app/format/schema/v4.json",
+  "title": "Cesure File v4",
+  "description": "A .cesure tablature file, version 4: a JSON skeleton (metadata, tempo, key, the measures of the piece — each its stable id, time signature and repeat signs, once for every track —, tracks, staves, voices) whose notes are written per voice in a compact text notation, each note its named pitch and, on a track with strings, the string it is played on. Written by Cesure (https://cesure.app), meant to be read and written by agents and tools; the full specification is at https://cesure.app/format. Defaults are omitted on write, except what version 4 requires: every track writes its id, name, instrument, program and, beside a tuning, its frets; every measure its id; the first measure whether it counts. A reader completes one a file lacks by the rule an older version reads it with, never refusing it. Every object keeps the keys it does not know, the root included, and the notation keeps the properties it does not know.",
+  "type": "object",
+  "required": [
+    "version",
+    "score"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 4,
+      "description": "Format version, an integer. 4 for this schema; a reader refuses a higher one, and reads versions 3, 2 and 1 forever, migrating them as it reads."
+    },
+    "requires": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What a reader must know to read the file right, as glTF's extensionsRequired: a reader that does not know a name listed refuses the file as a newer one, before it reads anything else. Absent or empty, nothing is required; empty in every file of this version, and not written then."
+    },
+    "score": {
+      "$ref": "#/$defs/Score"
+    }
+  },
+  "$defs": {
+    "Score": {
+      "type": "object",
+      "description": "The whole piece: metadata, the tempo, its measures and the tracks.",
+      "additionalProperties": true,
+      "properties": {
+        "title": {
+          "type": "string",
+          "default": "Untitled",
+          "description": "Title of the piece."
+        },
+        "artist": {
+          "type": "string",
+          "default": "",
+          "description": "Composer or performer."
+        },
+        "album": {
+          "type": "string",
+          "default": "",
+          "description": "Album, when the piece comes from one."
+        },
+        "tempo": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 999,
+          "default": 120,
+          "description": "Initial tempo in quarter notes per minute, whatever the time signature (a 6/8 at 60 dotted quarters per minute is 90), in force until the first tempo change. Whole or not: 92.5 is kept as written."
+        },
+        "tempoChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TempoChange"
+          },
+          "default": [],
+          "description": "Tempo changes, each at the start of a measure named by its id. Empty = constant tempo."
+        },
+        "key": {
+          "$ref": "#/$defs/Key",
+          "description": "The key of the piece from its first measure, always written: as a source or the user states it, else the signature its notes give and no mode (`none`, as MusicXML writes a `<key>` naming no tonic) — found when the file is first written and after a gesture that changes what it sounds, never again by a later build that only reads it. A reader that finds none completes it the same way."
+        },
+        "keyChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KeyChange"
+          },
+          "default": [],
+          "description": "Key changes, each at the start of a measure named by its id. Empty = one key for the whole piece."
+        },
+        "license": {
+          "type": "string",
+          "default": "",
+          "description": "License of the published work (e.g. \"Public Domain\", \"CC BY 4.0\"). Empty = the file says nothing."
+        },
+        "attribution": {
+          "type": "string",
+          "default": "",
+          "description": "Attribution of the edition, including year and source URL when applicable. Travels with the file (CC-BY requires it). Empty = nothing to attribute."
+        },
+        "hideEmptyStaves": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the staves whose `hideWhenEmpty` is `auto` leave a system they play nothing in (MuseScore's \"Hide empty staves\", alphaTab's `\\hideemptystaves`). Absent = they are drawn."
+        },
+        "hideEmptyStavesInFirstSystem": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the first system too leaves out the staves that hide when empty (LilyPond's `remove-first`, MuseScore's \"Hide empty staves in first system\"). Absent = the first system draws every staff."
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Column"
+          },
+          "description": "The measures of the piece, in order, each written once for every track: what a measure of every track holds alike. Measure i of a track is played in measure i of this list."
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Track"
+          },
+          "default": [],
+          "description": "The instrument tracks. Measure i of every track is measure i of the piece (`measures`), played at the same time."
+        }
+      },
+      "required": [
+        "key",
+        "measures"
+      ]
+    },
+    "Column": {
+      "type": "object",
+      "description": "One measure of the piece, the same for every track — as MuseScore's <Measure>: its id, its time signature, its count, its bar line, its repeat signs. Measure i of every track is played in measure i of this list.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Stable id of the measure, never reused. Name ranges by it: it survives insertions and deletions, a measure number does not. Required."
+        },
+        "numerator": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "default": 4,
+          "description": "Beats per measure (time signature numerator), 1 to 128. Not carried over: absent means 4, whatever the measure before. Cesure refuses a file that writes a value outside the range, naming it."
+        },
+        "denominator": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32
+          ],
+          "default": 4,
+          "description": "Note value of one beat (time signature denominator). Not carried over: absent means 4, whatever the measure before."
+        },
+        "incomplete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Irregular on purpose, in its own time signature, its real length: shorter than the piece's measures (an opening pickup, a closing measure that completes it, an inner pickup) or longer (a stretch of a cadenza). Played as written. Cesure shows and beams it in the time signature of its regular neighbour (the next one for an opening pickup, else the one before it) and numbers an opening pickup 0, without showing it: the first full measure is 1."
+        },
+        "barLineRight": {
+          "anyOf": [
+            {
+              "enum": [
+                "automatic",
+                "dashed",
+                "dotted",
+                "heavy",
+                "heavyHeavy",
+                "heavyLight",
+                "lightHeavy",
+                "lightLight",
+                "none",
+                "regular",
+                "short",
+                "tick"
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "The style of the bar line that closes the measure, by the name alphaTab gives it (MusicXML's `bar-style`). Cesure draws none as no line and every other one as the regular line. Absent: the regular line. Any other name is kept, written back, and drawn as the regular line."
+        },
+        "uncounted": {
+          "type": "boolean",
+          "default": false,
+          "description": "Left out of the measure count, as MusicXML's implicit: the measure carries the number of the one before it and shows none. Required on the first measure, which says whether a pickup counts; absent elsewhere, false."
+        },
+        "tsVisibility": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the time signature the measure would engrave (at the head, or where the meter changes) is printed, by alphaTab's name: false as MusicXML's print-object=no, where the source engraves none."
+        },
+        "barNumberDisplay": {
+          "anyOf": [
+            {
+              "enum": [
+                "allBars",
+                "firstOfSystem",
+                "hide"
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "How the measure's number shows, by alphaTab's name: hide for a measure counted without its number in sight (LilyPond parenthesises it). Absent: the rule. Any other name is kept, written back, and shown as the rule."
+        },
+        "meter": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "The nominal time signature [numerator, denominator] of an irregular measure no regular measure gives: a piece all in a cadenza. Written only there; Cesure shows and beams the measure in it. A pair that is no time signature is kept, written back, and shown as none."
+        },
+        "repeat": {
+          "$ref": "#/$defs/Repeat",
+          "description": "The repeat signs of the measure. Absent: none."
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "TempoChange": {
+      "type": "object",
+      "description": "A tempo taking effect on the beat where it falls, in its measure, until the next change.",
+      "additionalProperties": true,
+      "required": [
+        "measure",
+        "tempo"
+      ],
+      "properties": {
+        "measure": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The id of the measure the tempo falls in. A change naming no measure of the piece is ignored."
+        },
+        "at": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0,
+          "description": "Where in its measure the tempo falls, in quarter notes from its start, less than the measure's length. Absent: at its start."
+        },
+        "tempo": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 999,
+          "description": "Tempo in quarter notes per minute, whatever the time signature, from that beat on, whole or not."
+        }
+      }
+    },
+    "KeyChange": {
+      "type": "object",
+      "description": "A key taking effect at the start of a measure, until the next change.",
+      "additionalProperties": true,
+      "required": [
+        "measure",
+        "key"
+      ],
+      "properties": {
+        "measure": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The id of the measure the key starts at. A change naming no measure of the piece is ignored."
+        },
+        "key": {
+          "$ref": "#/$defs/Key",
+          "description": "The key from that measure on, written as the score's key is."
+        }
+      }
+    },
+    "Key": {
+      "type": "object",
+      "description": "A key, MusicXML's <key>: its signature and its mode, the tonic being the mode's degree of the major scale of the signature. A mode a reader does not know is read as none and a signature past seven as 0; either, and any other key of the object, is kept and written back.",
+      "additionalProperties": true,
+      "required": [
+        "fifths",
+        "mode"
+      ],
+      "properties": {
+        "fifths": {
+          "type": "integer",
+          "description": "Sharps (positive) or flats (negative), -7 to 7; 0 none. Any other whole number is kept and read as 0."
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "major",
+                "minor",
+                "ionian",
+                "dorian",
+                "phrygian",
+                "lydian",
+                "mixolydian",
+                "aeolian",
+                "locrian",
+                "none"
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "A mode of MusicXML, none (a signature naming no tonic) included; any other name is kept and read as none."
+        }
+      }
+    },
+    "Repeat": {
+      "type": "object",
+      "description": "The repeat signs of one measure of the piece.",
+      "additionalProperties": true,
+      "properties": {
+        "start": {
+          "type": "boolean",
+          "default": false,
+          "description": "A repeated section opens at the start of this measure (|:)."
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 99,
+          "description": "A repeated section closes at the end of this measure (:|): the number of times the section is played in all. Absent = no close here."
+        },
+        "endings": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "Alternative ending: the passes on which this measure is played ([1] = first ending, [2] = second). Absent or empty = played on every pass. A bracket longer than one measure repeats the passes on each of its measures."
+        },
+        "directions": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "enum": [
+                  "Segno",
+                  "SegnoSegno",
+                  "Coda",
+                  "DoubleCoda",
+                  "Fine",
+                  "DaCapo",
+                  "DaCapoAlCoda",
+                  "DaCapoAlDoubleCoda",
+                  "DaCapoAlFine",
+                  "DalSegno",
+                  "DalSegnoAlCoda",
+                  "DalSegnoAlDoubleCoda",
+                  "DalSegnoAlFine",
+                  "DalSegnoSegno",
+                  "DalSegnoSegnoAlCoda",
+                  "DalSegnoSegnoAlDoubleCoda",
+                  "DalSegnoSegnoAlFine",
+                  "DaCoda",
+                  "DaDoubleCoda"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "The signs (Segno, Coda, Fine...) and jumps (D.C., D.S., al Coda, al Fine, To Coda) of this measure, named as alphaTab names them."
+        },
+        "section": {
+          "type": "boolean",
+          "default": false,
+          "description": "This measure opens a section (a movement, MuseScore's section break): its repeats and jumps are played on their own."
+        }
+      }
+    },
+    "Track": {
+      "type": "object",
+      "description": "One instrument track.",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "What tells the track from the others of its score, whatever its place, as MusicXML's `<score-part id>`: opaque, unique in the file, kept by a writer, a new one for a new track. Required."
+        },
+        "name": {
+          "type": "string",
+          "description": "Track name, shown as written. Required."
+        },
+        "tuning": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-G](##|#|x|bb|b)?-?[0-9]+$",
+                "description": "An open string as a pitch, its octave in scientific notation: \"E4\"."
+              },
+              {
+                "$ref": "#/$defs/AbsNote"
+              }
+            ]
+          },
+          "description": "Open strings, as pitches, from string 1 (the highest) to string N (the lowest); its length is the number of strings — standard guitar [\"E4\",\"B3\",\"G3\",\"D3\",\"A2\",\"E2\"]. Absent = the track has no strings (a piano, a voice): its notes are pitches alone. An open string written as a version 2 object, keeping keys a reader does not know, stays one. With a tuning, `frets` is required."
+        },
+        "capo": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Capo position in frets (0 = none), only on a track with a tuning. The notes are their sounding pitches, so a capo moves the fret a note is played at, never what it sounds."
+        },
+        "frets": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 127,
+          "description": "The frets of the neck, as MuseScore's <StringData><frets> and Guitar Pro's: required beside a tuning, absent without one. A capo sits under the last fret; a note past it is kept on its string, played and drawn out of the neck."
+        },
+        "volume": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "description": "Track volume in the mix, 0..1. An arrangement property like `capo`: imported from Guitar Pro, saved and exported. Absent means 1 (full scale)."
+        },
+        "hideWhenEmpty": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "always",
+                  "never",
+                  "instrument"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "default": [],
+          "description": "How each staff, by index, hides in a system it plays no note in, as MuseScore's per-staff \"Hide when empty\": `auto` as the score's `hideEmptyStaves` says, `always` on its own, `never` not, `instrument` only with the whole track, when none of its staves plays (LilyPond's `\\RemoveEmptyStaves` in a PianoStaff, whose staves are kept together). A staff past the list is `auto`. A staff left out stays in the file: only the system does not draw it. A system keeps one staff at least: when every staff leaves, its first stays, as in MuseScore."
+        },
+        "instrument": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "keyboard.piano",
+                "pluck.guitar",
+                "pluck.bass",
+                "drum.group.set"
+              ]
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "description": "What the track is played on: an instrument sound id of MusicXML (`sounds.xml`, the `<instrument-sound>` vocabulary MuseScore writes too), an open vocabulary: `pluck.guitar.nylon-string`, `pluck.bass.electric`, `keyboard.piano.grand`, `drum.group.set`, `strings.violin`, `wind.flutes.flute`, `voice.alto`. A reader handles the families it knows by their prefix (`keyboard.piano`, `pluck.guitar`, `pluck.bass`, `drum.group.set`, the General MIDI drum kit whose beats strike drum notes `p36`); any other id is kept and written back, and the track sounds its `program`. The four words version 3 wrote (`PIANO`, `GUITAR`, `BASS`, `DRUMS`, any case) are read as their family's sound. A track whose source named no instrument is written as the app takes it: a guitar (`pluck.guitar…`) on strings, else a piano (`keyboard.piano…`) on staves that say it is no grand staff (see `staves`). Required."
+        },
+        "program": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127,
+          "description": "The General MIDI program (0..127, General MIDI's program 1 is 0) the track sounds, always written: imported from Guitar Pro, MIDI and MusicXML, else its instrument's — a nylon guitar (24), a finger bass (33), a grand piano (0). On a drum kit it is 0 unless its file states another, written back as stated and ignored: the track sounds the standard kit. Required."
+        },
+        "staves": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "clef": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The clef the staff opens on where no measure writes one, a name as a staff's `clef`: treble, bass, treble8vb, bass8vb, percussion…"
+              },
+              "type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "pitched",
+                      "tablature",
+                      "percussion"
+                    ]
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "What the staff is, as MuseScore's staff type groups name it: pitched, tablature (a track on strings) or percussion (a drum kit). The staves say what the track is: a percussion staff makes it a kit, any other a track of pitches, a tablature one on strings (a missing tuning is its family's standard one); a note of the other kind is refused. A name a reader does not know is kept and written back; absent, the notes decide as in version 3."
+              }
+            },
+            "required": [
+              "clef",
+              "type"
+            ]
+          },
+          "description": "The staves the track is drawn on, top to bottom, as MusicXML's `<staves>` and the `<clef number>` of each: a piano's two hands at least, else as many as a measure holds; a measure holding more keeps them, each drawn in its instrument's clef. A `keyboard.piano` track without a tuning is the grand staff — right hand over left — only on a treble staff over bass ones; on any other clefs (one treble staff, treble over treble) it is a part its source named no instrument for, each staff drawn on its own and sounding a piano. A staff declared past those a measure holds is drawn, a measure rest where nothing is written; each staff is drawn in the clef it declares, a name a reader does not draw kept and drawn as its instrument's. Required."
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Measure"
+          },
+          "default": [],
+          "description": "The measures of the track, in order."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "instrument",
+        "program",
+        "staves",
+        "measures"
+      ]
+    },
+    "Measure": {
+      "type": "object",
+      "description": "One measure of a track, in the measure of the piece at its place: its content alone, the chord symbols over it and, per staff, its voices. A mark of the measure of the piece (numerator, incomplete…) written here is the one an older file gave this track otherwise than the first: kept and written back, never read. Its numerator and denominator are reserved for a local time signature, the track's own in that measure (MusicXML's polymeter, MuseScore's local time signature): kept and written back; a file that asks for it to be played names localTimeSignature in requires.",
+      "additionalProperties": true,
+      "properties": {
+        "chords": {
+          "type": "array",
+          "description": "The chord symbols written over the measure, in order, one per instant, each from its instant to the next: at any instant, a beat struck there or inside a held note (MuseScore's time tick).",
+          "items": {
+            "type": "object",
+            "required": [
+              "chord"
+            ],
+            "properties": {
+              "at": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Quarter notes from the start of the measure. Absent: its start."
+              },
+              "chord": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "description": "The symbol as a lead sheet writes it: a root, a suffix opening as a chord's does, a bass after a slash (G/B, Bbm7, C7M, F#7(b9)/E); any other text (N.C., Coda) is kept whole and never transposed."
+              }
+            }
+          }
+        },
+        "staves": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Staff"
+          },
+          "description": "The staves of the track in this measure, top to bottom, as many as the track has: a piano's two — the right hand, then the left —, an organ's three, a guitar's second part. Every staff is played and drawn."
+        }
+      }
+    },
+    "Staff": {
+      "type": "object",
+      "description": "One staff of a track in one measure: its voices, one to four. A piano has two staves at least, the right hand over the left.",
+      "additionalProperties": true,
+      "required": [
+        "voices"
+      ],
+      "properties": {
+        "voices": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "description": "One voice of the staff in this measure, in the compact notation (https://cesure.app/format#the-compact-notation): beats separated by spaces; a beat is a note, a chord in parentheses, or r (rest), then .duration (-2 breve, 1, 2, 4, 8, 16, 32, 64, 128, 256), e.g. \"E4@1.4 (A2@5 E3@4).8 r.2\". A note is its sounding pitch as named (D#5 is not Eb5), then @ and its string on a track with strings (E4@1 open high E, G4@1 its third fret: the fret is never written, it follows from the pitch, the string, the tuning and the capo); x@6 a muted string; p42 a drum note. On input only, fret.string (3.1) is read too and written back as a pitch. Beat properties go in braces after the duration ({d} dotted, {dd} double-dotted, {tu 3} triplet, {tu (5 4)}, {tu 3 start 1} and {tu 3 stop 1} the first and the last beat of tuplet group 1, {tu 3 tu 3 start 2} a beat opening a triplet nested in a triplet (every tu it is in, the widest first, each with its group's edges), {hide} a rest never drawn, {fermata}, {fermata long} or {fermata (long 3.5)} a fermata over the beat, its shape veryshort|short|shorthenze|normal|long|longhenze|verylong and its stretch when it is not the shape's, {beam up} or {beam down} the stem forced to that side, {beam split}, {beam merge} or {beam splitsecondary} the beam stopped after the beat, carried on to the next, or its beam lines past the first stopped), note properties in braces after the note ({t} tied, {h} hammer-on/pull-off, {sl} slide, {be (0 0 15 4 60 4)} bend, its points as offset (0 to 60 along the note) and value in quarter tones, {v} vibrato, {lht} tap, {g} ghost, {nh 12} natural harmonic touched at fret 12, {ah 12} artificial harmonic, {hand A|B}). Every beat states its duration after a dot; nothing carries over from the previous measure."
+          },
+          "description": "The voices of the staff, played at the same time, each over the whole measure and with its own rhythm: the first, then a second one (a bass under a melody) when there is one. One to four, the first and the third stemmed up, the second and the fourth down; a fifth is refused where the file enters, naming the measure, the track and the staff. A reader keeps the ones it cannot show and writes them back. Each voice should fill the time signature."
+        },
+        "clef": {
+          "type": "string",
+          "description": "The clef the staff opens this measure on: treble, soprano, mezzosoprano, alto, tenor, baritone or bass, each maybe followed by 8vb, 8va, 15mb or 15ma (treble8vb), and later ones (kept when unknown); a change within the measure is the beat property clef of the notation. Absent from a measure: a PIANO without a tuning treble then bass; a track with a tuning treble8vb, a BASS with one bass8vb; without a tuning treble. A clef never changes what sounds."
+        }
+      }
+    },
+    "AbsNote": {
+      "type": "object",
+      "description": "An absolute pitch (pitch class + octave).",
+      "required": [
+        "note",
+        "octave"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "note": {
+          "type": "string",
+          "enum": [
+            "C",
+            "Cs",
+            "D",
+            "Ds",
+            "E",
+            "F",
+            "Fs",
+            "G",
+            "Gs",
+            "A",
+            "As",
+            "B"
+          ],
+          "description": "Pitch class. 's' suffix = sharp (e.g. Cs = C#). Closed for v1: a reader refuses a value it cannot name rather than guess the tuning, so adding one bumps the version."
+        },
+        "octave": {
+          "type": "integer",
+          "description": "Octave number in scientific pitch notation. Middle C = {note: C, octave: 4}."
+        }
+      }
+    }
+  }
+}

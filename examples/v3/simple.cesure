@@ -1,0 +1,1 @@
+{"version":3,"score":{"title":"Simple Example","tempo":96,"tracks":[{"tuning":["E4","B3","G3","D3","A2","E2"],"measures":[{"id":"p1","staves":[{"voices":["E4@1.4 C4@2.4 (G3@3 E3@4).4 r.4"]}]},{"numerator":3,"id":"p2","staves":[{"voices":["G4@1.8{d} F#4@1.16 E4@1.2","E2@6.2{d}"]}]}]}]}}
